@@ -24,6 +24,14 @@ app.use(cookieParser());
 //   console.log(`Mongo DB Connection Error: ${error}`);
 // });
 
+// OpenAI API setup
+import { Configuration, OpenAIApi } from 'openai';
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
 // API routes
 app.get('/api/hello', (req, res) => {
   res.json({ message: `Hello from SpotifAI!` });
@@ -47,6 +55,55 @@ app.get('/api/get-auth-url', async (req, res) => {
   res.status(200).json({
     url: `https://accounts.spotify.com/authorize?${params.toString()}`,
   });
+});
+
+app.post('/api/openai', async (req, res) => {
+  if (!configuration.apiKey) {
+    res.status(500).json({
+      error: {
+        message: 'OpenAI API key not configured',
+      },
+    });
+    return;
+  }
+
+  const input = req.body.input || '';
+  if (input.trim().length === 0) {
+    res.status(400).json({
+      error: {
+        message: 'Please enter a valid input',
+      },
+    });
+    return;
+  }
+
+  try {
+    const completion = await openai.createCompletion({
+      model: 'text-davinci-003',
+      prompt: `
+      Recommend a playlist of ten songs that match the given description. 
+      Each song should be numbered and include the artist and release year.
+      Description: ${input} 
+      Playlist:`,
+      temperature: 1,
+      max_tokens: 1024,
+    });
+    console.log(completion.data.choices);
+    res.status(200).json({ result: completion.data.choices[0].text });
+  } catch (error) {
+    // Consider adjusting the error handling logic for your use case
+    if (error.response) {
+      console.error(error.response.status, error.response.data);
+      res.status(error.response.status).json(error.response.data);
+    } else {
+      console.error(`Error with OpenAI API request: ${error.message}`);
+      res.status(500).json({
+        error: {
+          message: 'An error occurred during your request.',
+        },
+      });
+    }
+  }
 });
 
 // Catch 404 and forward to error handler
