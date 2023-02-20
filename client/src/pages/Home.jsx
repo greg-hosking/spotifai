@@ -55,7 +55,10 @@ function Home() {
     <>
       {name !== '' && (
         <h2 style={{ position: 'absolute', top: '5px', left: '20px' }}>
-          Signed in as {name}
+          <span>
+            <a href='/'>X</a>
+          </span>
+          &nbsp; Signed in as {name}
         </h2>
       )}
       <h1>Describe the playlist you want...</h1>
